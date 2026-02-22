@@ -1,10 +1,11 @@
+import { InferSelectModel } from 'drizzle-orm';
 import { boolean, index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { v7 as uuidv7 } from 'uuid';
 
 export const roleEnum = pgEnum('role', ['user', 'admin']);
 
-export const users = pgTable(
-  'users',
+export const user = pgTable(
+  'user',
   {
     id: uuid('id')
       .primaryKey()
@@ -20,5 +21,7 @@ export const users = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  table => [uniqueIndex('users_email_idx').on(table.email), index('users_created_at_idx').on(table.createdAt)]
+  table => [uniqueIndex('user_email_idx').on(table.email), index('user_created_at_idx').on(table.createdAt)]
 );
+
+export type User = InferSelectModel<typeof user>;
