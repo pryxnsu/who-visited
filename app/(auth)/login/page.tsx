@@ -1,4 +1,7 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
+import { signIn } from 'next-auth/react';
 
 export default function Page() {
   return (
@@ -14,6 +17,7 @@ export default function Page() {
         </div>
         <div className="w-full">
           <Button
+            onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
             variant={'outline'}
             type="button"
             className="group flex h-11 w-full cursor-pointer items-center justify-center gap-3 rounded-lg px-6 py-3"
