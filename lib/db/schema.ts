@@ -21,7 +21,32 @@ export const user = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  table => [uniqueIndex('user_email_idx').on(table.email), index('user_created_at_idx').on(table.createdAt)]
+  t => [uniqueIndex('user_email_idx').on(t.email), index('user_created_at_idx').on(t.createdAt)]
+);
+
+export const site = pgTable(
+  'site',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    domain: text('domain').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  t => [
+    uniqueIndex('site_domain_idx').on(t.domain),
+    index('site_user_id_idx').on(t.userId),
+    index('site_created_at_idx').on(t.createdAt),
+  ]
 );
 
 export type User = InferSelectModel<typeof user>;
+export type Site = InferSelectModel<typeof site>;

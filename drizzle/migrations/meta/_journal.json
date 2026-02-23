@@ -29,6 +29,27 @@
       "when": 1771745838407,
       "tag": "0003_nasty_ben_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1771759908642,
+      "tag": "0004_chilly_kate_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1771760596805,
+      "tag": "0005_clear_donald_blake",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1771873549989,
+      "tag": "0006_lush_kingpin",
+      "breakpoints": true
     }
   ]
 }
