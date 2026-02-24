@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { LayoutDashboard, LogOut, Settings, Wrench, Globe } from 'lucide-react';
 import {
@@ -18,6 +18,17 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -92,14 +103,34 @@ export function AppSidebar() {
       <SidebarFooter className="relative z-10 flex w-full shrink-0 flex-col gap-2 px-3 pb-3">
         <SidebarMenu className="w-full">
           <SidebarMenuItem className="w-full">
-            <Button
-              variant="ghost"
-              onClick={() => console.log('Logout clicked')}
-              className="text-muted-foreground h-10 w-full cursor-pointer justify-start rounded-lg px-4 text-base transition-colors hover:bg-red-50 hover:text-red-500"
-            >
-              <LogOut className="mr-4 h-5 w-5 hover:text-red-500" />
-              Log out
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-muted-foreground h-10 w-full cursor-pointer justify-start rounded-lg px-4 text-base transition-colors hover:bg-red-50 hover:text-red-500"
+                >
+                  <LogOut className="mr-4 h-5 w-5 hover:text-red-500" />
+                  Log out
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Log out?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    You will be signed out of your account and redirected to the login page.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                  >
+                    Log out
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
