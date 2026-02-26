@@ -1,22 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
 import { api, ApiResponse } from '@/lib/api';
 import { Site } from '@/types/site';
+import { getLocalStorage, setLocalStorage } from '@/lib/storage';
+
+const SITES_STORAGE_KEY = 'sites';
 
 export const useSites = () => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => getLocalStorage<Site[]>(SITES_STORAGE_KEY) === null);
   const [error, setError] = useState<string | null>(null);
-  const [sites, setSites] = useState<Site[]>([]);
+  const [sites, setSites] = useState<Site[]>(() => getLocalStorage<Site[]>(SITES_STORAGE_KEY) ?? []);
   const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null);
 
-  const fetchSites = async () => {
+  const fetchSites = useCallback(async () => {
     try {
       const { data } = await api.get<ApiResponse<Site[]>>('/api/sites');
-      console.log('data in sites', data);
-      if (data.data) {
-        setSites(data.data);
-      }
+      setSites(data.data ?? []);
+      setError(null);
     } catch (err) {
       console.error('Error fetching sites:', err);
       const message =
@@ -27,19 +28,24 @@ export const useSites = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchSites();
   }, []);
 
+  useEffect(() => {
+    void fetchSites();
+  }, [fetchSites]);
+
+  useEffect(() => {
+    setLocalStorage(SITES_STORAGE_KEY, sites);
+  }, [sites]);
+
   const appendNewSite = (site: Site) => {
-    setSites(prev => [site, ...prev]);
+    setSites(prev => (prev.some(existingSite => existingSite.id === site.id) ? prev : [site, ...prev]));
   };
 
   const handleDelete = async (id: string) => {
     const siteToDelete = sites.find(s => s.id === id);
     if (!siteToDelete) return;
+    const siteIndex = sites.findIndex(s => s.id === id);
 
     setDeletingSiteId(id);
     setSites(prev => prev.filter(s => s.id !== id));
@@ -53,7 +59,17 @@ export const useSites = () => {
           ? ((err.response?.data as { error?: string })?.error ?? 'Failed to delete site')
           : 'Failed to delete site. Please try again.';
       toast.error(message);
-      setSites(prev => (prev.some(s => s.id === id) ? prev : [...prev, siteToDelete]));
+
+      setSites(prev => {
+        if (prev.some(s => s.id === id)) {
+          return prev;
+        }
+
+        const nextSites = [...prev];
+        const insertIndex = Math.min(siteIndex, nextSites.length);
+        nextSites.splice(insertIndex, 0, siteToDelete);
+        return nextSites;
+      });
     } finally {
       setDeletingSiteId(current => (current === id ? null : current));
     }
