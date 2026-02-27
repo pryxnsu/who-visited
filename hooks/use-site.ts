@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
-import { api, ApiResponse } from '@/lib/api';
+import { api } from '@/lib/api';
 import { Site } from '@/types/site';
-import { getLocalStorage, setLocalStorage } from '@/lib/storage';
-
-const SITES_STORAGE_KEY = 'sites';
+import ApiResponse from '@/lib/ApiResponse';
 
 export const useSites = () => {
-  const [loading, setLoading] = useState(() => getLocalStorage<Site[]>(SITES_STORAGE_KEY) === null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sites, setSites] = useState<Site[]>(() => getLocalStorage<Site[]>(SITES_STORAGE_KEY) ?? []);
+  const [sites, setSites] = useState<Site[]>([]);
   const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null);
 
   const fetchSites = useCallback(async () => {
@@ -33,10 +31,6 @@ export const useSites = () => {
   useEffect(() => {
     void fetchSites();
   }, [fetchSites]);
-
-  useEffect(() => {
-    setLocalStorage(SITES_STORAGE_KEY, sites);
-  }, [sites]);
 
   const appendNewSite = (site: Site) => {
     setSites(prev => (prev.some(existingSite => existingSite.id === site.id) ? prev : [site, ...prev]));
@@ -75,5 +69,5 @@ export const useSites = () => {
     }
   };
 
-  return { fetchSites, sites, loading, error, appendNewSite, handleDelete, deletingSiteId };
+  return { refreshSites: fetchSites, sites, loading, error, appendNewSite, handleDelete, deletingSiteId };
 };

@@ -29,7 +29,7 @@ import { useSites } from '@/hooks/use-site';
 import { Site } from '@/types/site';
 
 export default function Page() {
-  const { fetchSites, sites, loading, error, appendNewSite, deletingSiteId, handleDelete } = useSites();
+  const { refreshSites, sites, loading, error, appendNewSite, deletingSiteId, handleDelete } = useSites();
 
   const [showForm, setShowForm] = useState(false);
   const [copiedSiteId, setCopiedSiteId] = useState<string | null>(null);
@@ -113,7 +113,7 @@ export default function Page() {
             </Button>
           )}
         </div>
-        {error && <ErrorUI error={error} onRetry={fetchSites} />}
+        {error && <ErrorUI error={error} onRetry={refreshSites} />}
       </section>
 
       <Dialog
