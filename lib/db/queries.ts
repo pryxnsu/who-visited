@@ -55,3 +55,13 @@ export async function deleteSite(siteId: string, userId: string) {
     throw new Error('Failed to delete site');
   }
 }
+
+export async function getSiteBySiteId(siteId: string) {
+  try {
+    const [s] = await db.select().from(site).where(eq(site.id, siteId));
+    return s ?? null;
+  } catch (error: unknown) {
+    console.error(`Database query failed in getSiteBySiteId for siteId: ${siteId}`, error);
+    throw new Error('Failed to fetch site');
+  }
+}
