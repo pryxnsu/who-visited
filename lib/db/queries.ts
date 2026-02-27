@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from './index';
 import { site, user } from './schema';
 
@@ -40,5 +40,18 @@ export async function getSitesByUserId(userId: string, limit = 100) {
   } catch (error: unknown) {
     console.error(`Database query failed in getSitesByUserId for userId: ${userId}`, error);
     throw new Error('Failed to fetch sites');
+  }
+}
+
+export async function deleteSite(siteId: string, userId: string) {
+  try {
+    const [s] = await db
+      .delete(site)
+      .where(and(eq(site.id, siteId), eq(site.userId, userId)))
+      .returning();
+    return s ?? null;
+  } catch (error: unknown) {
+    console.error('Database query failed in deleteSite', error);
+    throw new Error('Failed to delete site');
   }
 }
