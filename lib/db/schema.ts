@@ -71,6 +71,9 @@ export const visitor = pgTable(
     index('visitor_site_created_at_idx').on(t.siteId, t.createdAt),
     index('visitor_site_ip_created_at_idx').on(t.siteId, t.ip, t.createdAt),
     index('visitor_created_at_idx').on(t.createdAt),
+    index('visitor_site_path_idx').on(t.siteId, t.path),
+    index('visitor_site_referrer_idx').on(t.siteId, t.referrer),
+    index('visitor_site_browser_idx').on(t.siteId, t.browser),
   ]
 );
 

@@ -57,6 +57,13 @@
       "when": 1771874056832,
       "tag": "0007_fuzzy_white_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1771968259579,
+      "tag": "0008_wide_marvel_zombies",
+      "breakpoints": true
     }
   ]
 }
