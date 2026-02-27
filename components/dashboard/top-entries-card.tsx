@@ -11,7 +11,7 @@ interface TopEntriesCardProps {
 
 export function TopEntriesCard({ title, entries, emptyMessage, barColor = 'bg-primary' }: TopEntriesCardProps) {
   return (
-    <Card className="gap-0 py-6 shadow-none">
+    <Card className="gap-0 py-6 shadow-none border-dashed">
       <CardHeader className="pt-0 pb-6">
         <CardTitle className="text-xl font-semibold tracking-tight">{title}</CardTitle>
       </CardHeader>

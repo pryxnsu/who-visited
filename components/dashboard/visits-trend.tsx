@@ -61,7 +61,7 @@ const CustomHatchedBar = (props: React.SVGProps<SVGRectElement> & { dataKey?: st
 
 export function VisitsTrend({ loading, dayTrend, peakHour }: VisitsTrendProps) {
   return (
-    <Card className="flex flex-col gap-0 py-6 shadow-none">
+    <Card className="flex flex-col gap-0 py-6 shadow-none border-dashed">
       <CardHeader className="flex flex-row items-center justify-between pt-0 pb-6">
         <CardTitle className="text-xl font-semibold tracking-tight">Visits trend (7 days)</CardTitle>
         <div className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-semibold">Peak: {peakHour}</div>

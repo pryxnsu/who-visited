@@ -229,7 +229,7 @@ export default function Page() {
       ) : (
         <section className="flex flex-col gap-4">
           {formattedSites.map(site => (
-            <Card key={site.id} className="p-5 shadow-none">
+            <Card key={site.id} className="p-5 shadow-none border-dashed">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
