@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from './index';
-import { user } from './schema';
+import { site, user } from './schema';
 
 export async function getUserByEmail(email: string) {
   try {
@@ -19,5 +19,26 @@ export async function createUser(data: Omit<typeof user.$inferInsert, 'id' | 'cr
   } catch (error: unknown) {
     console.error('Database query failed in createUser', error);
     throw new Error('Failed to create user');
+  }
+}
+
+// ── Site queries ──
+
+export async function createSite(data: Omit<typeof site.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>) {
+  try {
+    const [s] = await db.insert(site).values(data).returning();
+    return s ?? null;
+  } catch (error: unknown) {
+    console.error('Database query failed in createSite', error);
+    throw error;
+  }
+}
+
+export async function getSitesByUserId(userId: string, limit = 100) {
+  try {
+    return await db.select().from(site).where(eq(site.userId, userId)).limit(limit);
+  } catch (error: unknown) {
+    console.error(`Database query failed in getSitesByUserId for userId: ${userId}`, error);
+    throw new Error('Failed to fetch sites');
   }
 }
