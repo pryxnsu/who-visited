@@ -17,11 +17,24 @@ export default function SetupPage() {
   const [selectedSiteId, setSelectedSiteId] = useState<string>('');
   const [copyLabel, setCopyLabel] = useState(COPY_IDLE_LABEL);
 
-  const currentSite = sites.find(s => s.id === selectedSiteId);
+  const effectiveSelectedSiteId = useMemo(() => {
+    if (sites.length === 0) {
+      return '';
+    }
+
+    if (sites.length === 1) {
+      return sites[0].id;
+    }
+
+    const selectedStillExists = sites.some(site => site.id === selectedSiteId);
+    return selectedStillExists ? selectedSiteId : '';
+  }, [selectedSiteId, sites]);
+
+  const currentSite = sites.find(s => s.id === effectiveSelectedSiteId);
 
   const snippet = useMemo(() => {
-    return getSnippet(selectedSiteId || 'YOUR_SITE_ID');
-  }, [selectedSiteId]);
+    return getSnippet(effectiveSelectedSiteId || 'YOUR_SITE_ID');
+  }, [effectiveSelectedSiteId]);
 
   useEffect(() => {
     if (copyLabel === COPY_IDLE_LABEL) return;
@@ -94,7 +107,7 @@ export default function SetupPage() {
               <span className="text-muted-foreground text-sm">({currentSite?.domain})</span>
             </div>
           ) : (
-            <Select value={selectedSiteId ?? undefined} onValueChange={id => setSelectedSiteId(id)}>
+            <Select value={effectiveSelectedSiteId || undefined} onValueChange={id => setSelectedSiteId(id)}>
               <SelectTrigger className="bg-background h-9 w-full max-w-[min(26rem,80vw)] focus:ring-1">
                 <SelectValue placeholder="Select a site" />
               </SelectTrigger>
