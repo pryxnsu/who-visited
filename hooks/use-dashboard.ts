@@ -5,9 +5,13 @@ import type { DashboardData } from '@/types/dashboard';
 import { api } from '@/lib/api';
 import { AxiosError } from 'axios';
 import { getLocalStorage, removeLocalStorage, setLocalStorage } from '@/lib/storage';
+import {
+  DASHBOARD_POLL_INTERVAL_STORAGE_KEY,
+  DEFAULT_DASHBOARD_POLL_INTERVAL_MS,
+  isValidDashboardPollInterval,
+} from '@/lib/constant';
 import { useSites } from './use-site';
 
-const POLL_INTERVAL_MS = 8000;
 const DASHBOARD_SITE_STORAGE_KEY = 'dashboard:selectedSiteId';
 
 export function useDashboard() {
@@ -30,6 +34,14 @@ export function useDashboard() {
   );
 
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [pollIntervalMs] = useState(() => {
+    const saved = getLocalStorage<number>(DASHBOARD_POLL_INTERVAL_STORAGE_KEY);
+    if (typeof saved === 'number' && isValidDashboardPollInterval(saved)) {
+      return saved;
+    }
+
+    return DEFAULT_DASHBOARD_POLL_INTERVAL_MS;
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
@@ -92,10 +104,10 @@ export function useDashboard() {
 
     const interval = setInterval(() => {
       void fetchDashboard(selectedSiteId);
-    }, POLL_INTERVAL_MS);
+    }, pollIntervalMs);
 
     return () => clearInterval(interval);
-  }, [dashboard, fetchDashboard, selectedSiteId, sitesLoading]);
+  }, [dashboard, fetchDashboard, pollIntervalMs, selectedSiteId, sitesLoading]);
 
   const handleManualRefresh = async () => {
     if (isRefreshing) return;

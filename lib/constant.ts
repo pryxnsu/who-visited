@@ -15,3 +15,13 @@ export const HTTP_STATUS = {
   BAD_GATEWAY: 502,
   SERVICE_UNAVAILABLE: 503,
 } as const;
+
+export const DASHBOARD_POLL_INTERVAL_STORAGE_KEY = 'dashboard:pollIntervalMs';
+export const DASHBOARD_POLL_INTERVAL_OPTIONS = [5000, 8000, 15000, 30000] as const;
+export const DEFAULT_DASHBOARD_POLL_INTERVAL_MS = 8000;
+
+export type DashboardPollIntervalMs = (typeof DASHBOARD_POLL_INTERVAL_OPTIONS)[number];
+
+export function isValidDashboardPollInterval(value: number): value is DashboardPollIntervalMs {
+  return DASHBOARD_POLL_INTERVAL_OPTIONS.includes(value as DashboardPollIntervalMs);
+}
