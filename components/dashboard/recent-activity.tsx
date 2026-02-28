@@ -9,7 +9,7 @@ type RecentActivityProps = {
 
 export function RecentActivity({ loading, activities }: RecentActivityProps) {
   return (
-    <Card className="flex flex-col gap-0 py-6 shadow-none border-dashed">
+    <Card className="flex flex-col gap-0 border-dashed py-6 shadow-none">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between pt-0 pb-4">
         <CardTitle className="mt-1 text-xl font-semibold tracking-tight">Recent activity</CardTitle>
       </CardHeader>
