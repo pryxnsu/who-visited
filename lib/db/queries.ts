@@ -22,6 +22,16 @@ export async function createUser(data: Omit<typeof user.$inferInsert, 'id' | 'cr
   }
 }
 
+export async function deleteUserById(userId: string) {
+  try {
+    const [deletedUser] = await db.delete(user).where(eq(user.id, userId)).returning();
+    return deletedUser ?? null;
+  } catch (error: unknown) {
+    console.error(`Database query failed in deleteUserById for userId: ${userId}`, error);
+    throw new Error('Failed to delete user');
+  }
+}
+
 // ── Site queries ──
 
 export async function createSite(data: Omit<typeof site.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>) {
