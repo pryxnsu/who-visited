@@ -124,7 +124,10 @@ export function AppSidebar() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    onClick={() => {
+                      signOut({ callbackUrl: '/login' });
+                      localStorage.clear();
+                    }}
                   >
                     Log out
                   </AlertDialogAction>
