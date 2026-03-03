@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from './index';
-import { site, user } from './schema';
+import { site, user, visitor } from './schema';
 
 export async function getUserByEmail(email: string) {
   try {
@@ -74,4 +74,8 @@ export async function getSiteBySiteId(siteId: string) {
     console.error(`Database query failed in getSiteBySiteId for siteId: ${siteId}`, error);
     throw new Error('Failed to fetch site');
   }
+}
+
+export async function entryVisitor(data: Omit<typeof visitor.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>) {
+  await db.insert(visitor).values(data);
 }
