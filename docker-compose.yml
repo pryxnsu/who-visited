@@ -1,17 +1,11 @@
 name: who-visited
 services:
-  who-visited.app:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - HOSTNAME=0.0.0.0      
-
+    env_file:
+      - .env
     ports:
-     - 3000:3000
-    
+      - 3000:3000
     restart: unless-stopped
-  
