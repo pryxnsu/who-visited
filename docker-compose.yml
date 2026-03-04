@@ -1,11 +1,40 @@
 name: who-visited
+
+volumes:
+  database_data:
+
+networks:
+  connection:
+    name: connection
+    external: false
+
 services:
+  database:
+    container_name: database
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - 5432:5432
+    networks:
+      - connection
   app:
+    container_name: app
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - .env
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DATABASE_HOST}/${POSTGRES_DB}
     ports:
       - 3000:3000
-    restart: unless-stopped
+    depends_on:
+      - database
+    networks:
+      - connection
