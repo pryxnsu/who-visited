@@ -1,18 +1,16 @@
 export function getSnippet(siteId: string) {
+  const src =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/tracker.js`
+      : "https://whovisited.priyanshu.me/tracker.js";
+
   return [
-    '<script>',
-    `  fetch('${typeof window !== 'undefined' ? window.location.origin : 'https://YOUR-APP.com'}/api/track', {`,
-    "    method: 'POST',",
-    "    headers: { 'Content-Type': 'application/json' },",
-    '    body: JSON.stringify({',
-    `      siteId: '${siteId}',`,
-    '      path: window.location.pathname,',
-    "      referrer: document.referrer || 'Direct',",
-    '      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone',
-    '    })',
-    '  });',
-    '</script>',
-  ].join('\n');
+    `<Script`,
+    `  src="${src}"`,
+    `  data-site-id="${siteId}"`,
+    `  strategy="afterInteractive"`,
+    `/>`,
+  ].join("\n");
 }
 
 export function getRelativeTime(isoTimestamp: string) {
