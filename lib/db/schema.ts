@@ -4,6 +4,18 @@ import { v7 as uuidv7 } from 'uuid';
 
 export const roleEnum = pgEnum('role', ['user', 'admin']);
 
+export const verificationStatusEnum = pgEnum('verification_status', [
+  'pending',
+  'verified',
+  'failed',
+]);
+
+export const verificationMethodEnum = pgEnum('verification_method', [
+  'dns_txt',
+  'meta_tag',
+  'file',
+]);
+
 export const user = pgTable(
   'user',
   {
@@ -35,6 +47,10 @@ export const site = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     domain: text('domain').notNull(),
+    verificationStatus: verificationStatusEnum('verification_status').notNull().default('pending'),
+    verificationMethod: verificationMethodEnum('verification_method'),
+    verificationToken: varchar('verification_token', { length: 96 }).notNull(),
+    verifiedAt: timestamp('verified_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at')
       .notNull()
