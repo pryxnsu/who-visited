@@ -1,21 +1,25 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, Copy, Globe, Plus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import Link from 'next/link';
-import { getSnippet } from '@/lib/helper';
+import { getNextJsSnippet, getUniversalSnippet } from '@/lib/helper';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSites } from '@/hooks/use-site';
 import ErrorUI from '@/components/Error';
 
 const COPY_IDLE_LABEL = 'Copy snippet';
+type SnippetType = 'universal' | 'nextjs';
 
 export default function SetupPage() {
   const { refreshSites, sites, loading, error } = useSites();
   const [selectedSiteId, setSelectedSiteId] = useState<string>('');
-  const [copyLabel, setCopyLabel] = useState(COPY_IDLE_LABEL);
+  const [copyLabels, setCopyLabels] = useState<Record<SnippetType, string>>({
+    universal: COPY_IDLE_LABEL,
+    nextjs: COPY_IDLE_LABEL,
+  });
 
   const effectiveSelectedSiteId = useMemo(() => {
     if (sites.length === 0) {
@@ -32,23 +36,21 @@ export default function SetupPage() {
 
   const currentSite = sites.find(s => s.id === effectiveSelectedSiteId);
 
-  const snippet = useMemo(() => {
-    return getSnippet(effectiveSelectedSiteId || 'YOUR_SITE_ID');
-  }, [effectiveSelectedSiteId]);
+  const snippetSiteId = effectiveSelectedSiteId || 'YOUR_SITE_ID';
+  const universalSnippet = useMemo(() => getUniversalSnippet(snippetSiteId), [snippetSiteId]);
+  const nextJsSnippet = useMemo(() => getNextJsSnippet(snippetSiteId), [snippetSiteId]);
 
-  useEffect(() => {
-    if (copyLabel === COPY_IDLE_LABEL) return;
-    const timeout = setTimeout(() => setCopyLabel(COPY_IDLE_LABEL), 1700);
-    return () => clearTimeout(timeout);
-  }, [copyLabel]);
-
-  async function copySnippet() {
+  async function copySnippet(type: SnippetType, value: string) {
     try {
-      await navigator.clipboard.writeText(snippet);
-      setCopyLabel('Copied');
+      await navigator.clipboard.writeText(value);
+      setCopyLabels(prev => ({ ...prev, [type]: 'Copied' }));
     } catch {
-      setCopyLabel('Copy failed');
+      setCopyLabels(prev => ({ ...prev, [type]: 'Copy failed' }));
     }
+
+    setTimeout(() => {
+      setCopyLabels(prev => ({ ...prev, [type]: COPY_IDLE_LABEL }));
+    }, 1700);
   }
 
   if (loading) {
@@ -94,7 +96,7 @@ export default function SetupPage() {
         </p>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-6 lg:grid-cols-3">
         <Card className="border-dashed p-6">
           <h2 className="text-lg font-semibold tracking-tight">Step 1: Select Site</h2>
           <p className="text-muted-foreground mt-2 text-sm">
@@ -126,16 +128,16 @@ export default function SetupPage() {
         </Card>
 
         <Card className="text-primary-foreground border-dashed p-6">
-          <h2 className="text-lg font-semibold tracking-tight text-black">Step 2: Copy Snippet</h2>
-          <p className="mt-2 text-sm text-black">Copy this snippet and paste it into your portfolio website.</p>
+          <h2 className="text-lg font-semibold tracking-tight text-black">Step 2: Universal Snippet</h2>
+          <p className="mt-2 text-sm text-black">Use this for HTML, React, Vue, WordPress, or any website.</p>
           <pre className="mt-4 max-h-52 overflow-auto rounded-lg border p-4 text-xs leading-relaxed text-black">
-            <code>{snippet}</code>
+            <code>{universalSnippet}</code>
           </pre>
           <Button
-            onClick={copySnippet}
+            onClick={() => void copySnippet('universal', universalSnippet)}
             className="mt-4 w-full cursor-pointer border bg-white font-semibold text-black hover:bg-white/90"
           >
-            {copyLabel === 'Copied' ? (
+            {copyLabels.universal === 'Copied' ? (
               <>
                 <Check className="mr-2 h-4 w-4" />
                 Copied to clipboard
@@ -143,7 +145,33 @@ export default function SetupPage() {
             ) : (
               <>
                 <Copy className="mr-2 h-4 w-4" />
-                Copy code snippet
+                {copyLabels.universal === COPY_IDLE_LABEL ? 'Copy universal snippet' : copyLabels.universal}
+              </>
+            )}
+          </Button>
+        </Card>
+
+        <Card className="text-primary-foreground border-dashed p-6">
+          <h2 className="text-lg font-semibold tracking-tight text-black">Step 2: Next.js Snippet</h2>
+          <p className="mt-2 text-sm text-black">
+            Use this in your Next.js project where you can render <code>{'<Script />'}</code>.
+          </p>
+          <pre className="mt-4 max-h-52 overflow-auto rounded-lg border p-4 text-xs leading-relaxed text-black">
+            <code>{nextJsSnippet}</code>
+          </pre>
+          <Button
+            onClick={() => void copySnippet('nextjs', nextJsSnippet)}
+            className="mt-4 w-full cursor-pointer border bg-white font-semibold text-black hover:bg-white/90"
+          >
+            {copyLabels.nextjs === 'Copied' ? (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Copied to clipboard
+              </>
+            ) : (
+              <>
+                <Copy className="mr-2 h-4 w-4" />
+                {copyLabels.nextjs === COPY_IDLE_LABEL ? 'Copy Next.js snippet' : copyLabels.nextjs}
               </>
             )}
           </Button>
@@ -151,31 +179,57 @@ export default function SetupPage() {
       </section>
 
       <Card className="border-dashed p-6">
-        <h2 className="text-lg font-semibold tracking-tight">Step 3: Paste in your layout file</h2>
-        <p className="text-muted-foreground mt-2 text-sm">
-          Open your portfolio app and paste the snippet in your root layout/template file (for example:{' '}
-          <code className="bg-muted rounded px-1 py-0.5 text-xs">app/layout.tsx</code>) right before the closing{' '}
-          <code className="bg-muted rounded px-1 py-0.5 text-xs">&lt;/body&gt;</code> tag.
-        </p>
-        <pre className="bg-muted mt-4 overflow-auto rounded-lg p-4 text-xs leading-relaxed">
-          <code>{`// app/layout.tsx
-export default function RootLayout({ children }) {
+        <h2 className="text-lg font-semibold tracking-tight">Step 3: Where to paste</h2>
+
+        <div className="mt-4">
+          <h3 className="text-sm font-semibold">For HTML/React/Vue/etc.</h3>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Open your main HTML/template file and paste the universal snippet right before{' '}
+            <code className="bg-muted rounded px-1 py-0.5 text-xs">&lt;/body&gt;</code>.
+          </p>
+          <pre className="bg-muted mt-3 overflow-auto rounded-lg p-4 text-xs leading-relaxed">
+            <code>{`<!-- index.html -->
+<html>
+  <body>
+    <!-- your website content -->
+
+    <!-- paste the whovisited snippet here -->
+    ${universalSnippet}
+  </body>
+</html>`}</code>
+          </pre>
+        </div>
+
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold">For Next.js</h3>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Open <code className="bg-muted rounded px-1 py-0.5 text-xs">app/layout.tsx</code> and paste the Next.js
+            snippet inside <code className="bg-muted rounded px-1 py-0.5 text-xs">&lt;body&gt;</code>, right before{' '}
+            <code className="bg-muted rounded px-1 py-0.5 text-xs">&lt;/body&gt;</code>.
+          </p>
+          <pre className="bg-muted mt-3 overflow-auto rounded-lg p-4 text-xs leading-relaxed">
+            <code>{`// app/layout.tsx
+import Script from 'next/script';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html lang="en">
       <body>
         {children}
-        {/* paste the whovisited snippet here */}
+        ${nextJsSnippet.split('\n').slice(2).join('\n        ')}
       </body>
     </html>
   );
 }`}</code>
-        </pre>
+          </pre>
+        </div>
       </Card>
 
       <Card className="border-dashed p-6">
         <h2 className="text-lg font-semibold tracking-tight">Step 4: Verify tracking</h2>
         <p className="text-muted-foreground mt-2 text-sm">
-          Deploy/update your site, visit a few pages, then open Dashboard. You should start seeing visits in real time.
+          Publish your changes, visit a few pages on your site, then open Dashboard. You should start seeing visits in
+          real time.
         </p>
       </Card>
     </main>

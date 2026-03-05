@@ -1,16 +1,30 @@
-export function getSnippet(siteId: string) {
-  const src =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/tracker.js`
-      : "https://whovisited.priyanshu.me/tracker.js";
+function getTrackerScriptSrc() {
+  return typeof window !== 'undefined'
+    ? `${window.location.origin}/tracker.js`
+    : 'https://whovisited.priyanshu.me/tracker.js';
+}
+
+export function getUniversalSnippet(siteId: string) {
+  const src = getTrackerScriptSrc();
+  return `<script defer src="${src}" data-site-id="${siteId}"></script>`;
+}
+
+export function getNextJsSnippet(siteId: string) {
+  const src = getTrackerScriptSrc();
 
   return [
-    `<Script`,
+    `import Script from 'next/script';`,
+    '',
+    '<Script',
     `  src="${src}"`,
     `  data-site-id="${siteId}"`,
-    `  strategy="afterInteractive"`,
-    `/>`,
-  ].join("\n");
+    '  strategy="afterInteractive"',
+    '/>',
+  ].join('\n');
+}
+
+export function getSnippet(siteId: string) {
+  return getUniversalSnippet(siteId);
 }
 
 export function getRelativeTime(isoTimestamp: string) {
