@@ -5,6 +5,8 @@ import { entryVisitor, getSiteBySiteId } from '@/lib/db/queries';
 import { normalizeDomain } from '@/lib/domain';
 import { HTTP_STATUS } from '@/lib/constant';
 import { trackSchema } from '@/types/schema';
+import { serverEnv } from '@/env/server';
+import crypto from 'crypto';
 
 type TrackPayload = {
   siteId?: unknown;
@@ -147,6 +149,12 @@ function getIpAddress(request: NextRequest) {
   return 'localhost';
 }
 
+function hashIpAddress(siteId: string, ip: string) {
+  const hmac = crypto.createHmac('sha256', serverEnv.NEXTAUTH_SECRET);
+  hmac.update(`${siteId}:${ip}`);
+  return hmac.digest('hex');
+}
+
 function getGeoLocation(request: NextRequest) {
   const countryRaw = request.headers.get('x-vercel-ip-country') ?? request.headers.get('cf-ipcountry');
   const cityRaw = request.headers.get('x-vercel-ip-city');
@@ -224,9 +232,12 @@ export async function POST(request: NextRequest) {
     const referrer = normalizeReferrer(request.headers.get('referer'));
     const geo = getGeoLocation(request);
 
+    const ip = getIpAddress(request);
+    const hashedIp = hashIpAddress(payload.siteId, ip);
+
     await entryVisitor({
       siteId: payload.siteId,
-      ip: getIpAddress(request),
+      ip: hashedIp,
       browser,
       os,
       device,
