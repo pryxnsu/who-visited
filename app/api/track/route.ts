@@ -168,6 +168,19 @@ function getGeoLocation(request: NextRequest) {
   };
 }
 
+function getBotReasonFromRequest(request: NextRequest): string | null {
+  const ua = request.headers.get('user-agent');
+  const botRegex = /bot|spider|crawler|curl|wget|python|scrapy|headless|puppeteer|playwright/i;
+
+  if (!ua) return 'missing_user_agent';
+
+  if (botRegex.test(ua)) return 'ua_bot_signature';
+
+  if (!request.headers.get('accept-language')) return 'missing_accept_language';
+
+  return null;
+}
+
 async function parsePayload(request: NextRequest): Promise<TrackPayload> {
   try {
     const text = await request.text();
@@ -177,6 +190,59 @@ async function parsePayload(request: NextRequest): Promise<TrackPayload> {
     console.warn('Failed to parse tracking payload:', err);
     return {};
   }
+}
+
+const RATE_WINDOW_MS = 10_000;
+const RATE_BOT_THRESHOLD = 20;
+const RATE_BUCKET_TTL_MS = 5 * 60 * 1000;
+const RATE_CLEANUP_INTERVAL_MS = 60 * 1000;
+
+type RateBucket = {
+  count: number;
+  windowStartedAt: number;
+  lastSeenAt: number;
+};
+
+// siteId:ipHash:path -> rolling request bucket
+const reqMap = new Map<string, RateBucket>();
+let lastReqMapCleanupAt = 0;
+
+// Run cleanup at most once per minute; remove buckets inactive for over 5 minutes
+function cleanupReqMap(now: number) {
+  if (now - lastReqMapCleanupAt < RATE_CLEANUP_INTERVAL_MS) return;
+  lastReqMapCleanupAt = now;
+
+  for (const [key, bucket] of reqMap.entries()) {
+    if (now - bucket.lastSeenAt > RATE_BUCKET_TTL_MS) {
+      reqMap.delete(key);
+    }
+  }
+}
+
+function getRateInfo(key: string, now: number) {
+  const current = reqMap.get(key);
+
+  if (!current || now - current.windowStartedAt > RATE_WINDOW_MS) {
+    const nextBucket: RateBucket = {
+      count: 1,
+      windowStartedAt: now,
+      lastSeenAt: now,
+    };
+    reqMap.set(key, nextBucket);
+    return { count: nextBucket.count, isRateBot: false };
+  }
+
+  const nextCount = current.count + 1;
+  reqMap.set(key, {
+    count: nextCount,
+    windowStartedAt: current.windowStartedAt,
+    lastSeenAt: now,
+  });
+
+  return {
+    count: nextCount,
+    isRateBot: nextCount >= RATE_BOT_THRESHOLD,
+  };
 }
 
 // POST - /api/track
@@ -235,6 +301,19 @@ export async function POST(request: NextRequest) {
     const ip = getIpAddress(request);
     const hashedIp = hashIpAddress(payload.siteId, ip);
 
+    // bot detection
+    const key = `${existingSite.id}:${hashedIp}:${path}`;
+    const now = Date.now();
+
+    cleanupReqMap(now);
+
+    const { isRateBot } = getRateInfo(key, now);
+
+    const botReasonFromRequest = getBotReasonFromRequest(request);
+    const rateBotReason = isRateBot ? 'rate_limit_exceeded' : null;
+    const botReason = botReasonFromRequest ?? rateBotReason;
+    const isBot = botReason !== null;
+
     await entryVisitor({
       siteId: payload.siteId,
       ip: hashedIp,
@@ -243,6 +322,8 @@ export async function POST(request: NextRequest) {
       device,
       referrer,
       path,
+      isBot,
+      botReason,
       country: geo.country,
       city: geo.city,
     });

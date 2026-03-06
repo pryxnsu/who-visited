@@ -81,6 +81,8 @@ export const visitor = pgTable(
     country: varchar('country', { length: 2 }),
     city: varchar('city', { length: 120 }),
     path: text('path').notNull(),
+    isBot: boolean('is_bot').default(false),
+    botReason: text('bot_reason'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   t => [
@@ -90,6 +92,7 @@ export const visitor = pgTable(
     index('visitor_site_path_idx').on(t.siteId, t.path),
     index('visitor_site_referrer_idx').on(t.siteId, t.referrer),
     index('visitor_site_browser_idx').on(t.siteId, t.browser),
+    index('visitor_site_is_bot_idx').on(t.siteId, t.isBot, t.createdAt)
   ]
 );
 
