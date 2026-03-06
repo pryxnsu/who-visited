@@ -1,4 +1,5 @@
 import { z } from 'zod/v3';
+import { SITE_VERIFICATION_METHODS } from './site';
 
 export const addSiteSchema = z.object({
   name: z
@@ -49,4 +50,12 @@ export const trackSchema = z.object({
   timestamp: z.string().optional(),
 });
 
+export const verifySiteSchema = z.object({
+  method: z.enum(SITE_VERIFICATION_METHODS, {
+    required_error: 'Verification method is required',
+    invalid_type_error: 'Invalid verification method',
+  }),
+});
+
 export type AddSiteFormValues = z.infer<typeof addSiteSchema>;
+export type VerifySiteValues = z.infer<typeof verifySiteSchema>;

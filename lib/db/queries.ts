@@ -76,6 +76,38 @@ export async function getSiteBySiteId(siteId: string) {
   }
 }
 
+export async function getSiteByIdAndUserId(siteId: string, userId: string) {
+  try {
+    const [s] = await db
+      .select()
+      .from(site)
+      .where(and(eq(site.id, siteId), eq(site.userId, userId)));
+    return s ?? null;
+  } catch (error: unknown) {
+    console.error(`Database query failed in getSiteByIdAndUserId for siteId: ${siteId} and userId: ${userId}`, error);
+    throw new Error('Failed to fetch site');
+  }
+}
+
+export async function updateSiteVerification(
+  siteId: string,
+  userId: string,
+  data: Pick<typeof site.$inferInsert, 'verificationStatus' | 'verificationMethod' | 'verifiedAt'>
+) {
+  try {
+    const [updated] = await db
+      .update(site)
+      .set(data)
+      .where(and(eq(site.id, siteId), eq(site.userId, userId)))
+      .returning();
+
+    return updated ?? null;
+  } catch (error: unknown) {
+    console.error(`Database query failed in updateSiteVerification for siteId: ${siteId} and userId: ${userId}`, error);
+    throw new Error('Failed to update site verification');
+  }
+}
+
 export async function entryVisitor(data: Omit<typeof visitor.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>) {
   await db.insert(visitor).values(data);
 }
