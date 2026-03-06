@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'node:crypto';
 import { createSite, getSitesByUserId } from '@/lib/db/queries';
 import { HTTP_STATUS } from '@/lib/constant';
 import ApiResponse from '@/lib/ApiResponse';
 import { getAuthUser } from '@/lib/auth';
+import { normalizeDomain } from '@/lib/domain';
 import { addSiteSchema } from '@/types/schema';
+
+function createVerificationToken() {
+  return randomBytes(24).toString('hex');
+}
 
 // GET - api/sites
 export async function GET(request: NextRequest) {
@@ -45,7 +51,13 @@ export async function POST(request: NextRequest) {
   }
 
   const name = result.data.name.trim();
-  const domain = result.data.domain.trim().toLowerCase();
+  const domain = normalizeDomain(result.data.domain);
+
+  if (!domain) {
+    return NextResponse.json(new ApiResponse(HTTP_STATUS.BAD_REQUEST, false, null, 'Domain is required'), {
+      status: HTTP_STATUS.BAD_REQUEST,
+    });
+  }
 
   const userId = user.id;
   try {
@@ -53,6 +65,7 @@ export async function POST(request: NextRequest) {
       userId,
       name,
       domain,
+      verificationToken: createVerificationToken(),
     });
 
     return NextResponse.json(new ApiResponse(HTTP_STATUS.CREATED, true, site, 'Site created successfully'));
