@@ -1,5 +1,8 @@
+// this route handles incoming tracking requests from the client-side script
+
 import { NextRequest, NextResponse } from 'next/server';
 import { entryVisitor, getSiteBySiteId } from '@/lib/db/queries';
+import { normalizeDomain } from '@/lib/domain';
 import { HTTP_STATUS } from '@/lib/constant';
 import { trackSchema } from '@/types/schema';
 
@@ -60,6 +63,30 @@ function normalizeReferrer(value: unknown) {
   } catch {
     return raw;
   }
+}
+
+function extractHostnameFromUrl(value: string | null) {
+  if (!value) return null;
+
+  const candidate = value.trim();
+  if (!candidate || candidate === '*' || candidate === 'null') return null;
+
+  try {
+    const parsed = new URL(candidate);
+    return normalizeDomain(parsed.hostname);
+  } catch {
+    return null;
+  }
+}
+
+function getRequestSiteHost(request: NextRequest) {
+  const originHost = extractHostnameFromUrl(request.headers.get('origin'));
+  if (originHost) return originHost;
+
+  const refererHost = extractHostnameFromUrl(request.headers.get('referer'));
+  if (refererHost) return refererHost;
+
+  return null;
 }
 
 function getBrowserName(userAgent: string) {
@@ -144,6 +171,7 @@ async function parsePayload(request: NextRequest): Promise<TrackPayload> {
   }
 }
 
+// POST - /api/track
 export async function POST(request: NextRequest) {
   try {
     const raw = await parsePayload(request);
@@ -161,6 +189,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { ok: false, error: 'Site not found. Please register your site first.' },
         { status: HTTP_STATUS.NOT_FOUND, headers: CORS_HEADERS }
+      );
+    }
+
+    if (existingSite.verificationStatus !== 'verified') {
+      return NextResponse.json(
+        { ok: false, error: 'Site domain is not verified yet.' },
+        { status: HTTP_STATUS.FORBIDDEN, headers: CORS_HEADERS }
+      );
+    }
+
+    const requestSiteHost = getRequestSiteHost(request);
+    if (!requestSiteHost) {
+      return NextResponse.json(
+        { ok: false, error: 'Missing or invalid request origin.' },
+        { status: HTTP_STATUS.BAD_REQUEST, headers: CORS_HEADERS }
+      );
+    }
+
+    const registeredHost = normalizeDomain(existingSite.domain);
+    if (requestSiteHost !== registeredHost) {
+      return NextResponse.json(
+        { ok: false, error: 'Request origin does not match the registered site domain.' },
+        { status: HTTP_STATUS.BAD_REQUEST, headers: CORS_HEADERS }
       );
     }
 
