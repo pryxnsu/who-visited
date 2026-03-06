@@ -8,6 +8,7 @@ import { api, ApiResponse } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card } from '@/components/ui/card';
 import { Check, Copy, ExternalLink, Globe, Plus, Trash2, AlertCircle } from 'lucide-react';
@@ -22,18 +23,80 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ErrorUI from '@/components/Error';
 import { AddSiteFormValues, addSiteSchema } from '@/types/schema';
 import { getSnippet } from '@/lib/helper';
 import { useSites } from '@/hooks/use-site';
-import { Site } from '@/types/site';
+import { Site, SiteVerificationMethod } from '@/types/site';
+
+function getVerificationMethodLabel(method: SiteVerificationMethod) {
+  if (method === 'dns_txt') return 'DNS TXT record';
+  if (method === 'meta_tag') return 'Meta tag';
+  return 'File in .well-known';
+}
+
+function getVerificationStatusBadge(status: Site['verificationStatus']) {
+  if (status === 'verified') {
+    return { label: 'Verified', variant: 'default' as const };
+  }
+  if (status === 'failed') {
+    return { label: 'Verification failed', variant: 'destructive' as const };
+  }
+  return { label: 'Pending verification', variant: 'secondary' as const };
+}
+
+function getVerificationInstructions(domain: string, token: string, method: SiteVerificationMethod) {
+  const safeDomain = domain
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .replace(/\.$/, '');
+
+  if (method === 'dns_txt') {
+    return {
+      locationLabel: 'TXT host',
+      locationValue: `_whovisited.${safeDomain}`,
+      valueLabel: 'TXT value',
+      value: `whovisited=${token}`,
+    };
+  }
+
+  if (method === 'meta_tag') {
+    return {
+      locationLabel: 'Paste in',
+      locationValue: `<head> on https://${safeDomain}`,
+      valueLabel: 'Meta tag',
+      value: `<meta name="whovisited-verification" content="${token}" />`,
+    };
+  }
+
+  return {
+    locationLabel: 'File path',
+    locationValue: `https://${safeDomain}/.well-known/whovisited.txt`,
+    valueLabel: 'File content',
+    value: token,
+  };
+}
 
 export default function Page() {
-  const { refreshSites, sites, loading, error, appendNewSite, deletingSiteId, handleDelete } = useSites();
+  const {
+    refreshSites,
+    sites,
+    loading,
+    error,
+    appendNewSite,
+    deletingSiteId,
+    handleDelete,
+    verifySite,
+    verifyingSiteId,
+  } = useSites();
 
   const [showForm, setShowForm] = useState(false);
   const [copiedSiteId, setCopiedSiteId] = useState<string | null>(null);
   const [siteToDelete, setSiteToDelete] = useState<Site | null>(null);
+  const [verificationMethodBySiteId, setVerificationMethodBySiteId] = useState<Record<string, SiteVerificationMethod>>(
+    {}
+  );
 
   // ── Form ──
   const form = useForm<AddSiteFormValues>({
@@ -81,6 +144,10 @@ export default function Page() {
 
   const hasSites = sites.length > 0;
 
+  const resolveVerificationMethod = (site: Site): SiteVerificationMethod => {
+    return verificationMethodBySiteId[site.id] ?? site.verificationMethod ?? 'dns_txt';
+  };
+
   const formattedSites = useMemo(() => {
     return sites.map(s => ({
       ...s,
@@ -89,6 +156,13 @@ export default function Page() {
         day: 'numeric',
         year: 'numeric',
       }),
+      verifiedLabel: s.verifiedAt
+        ? new Date(s.verifiedAt).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })
+        : null,
     }));
   }, [sites]);
 
@@ -237,6 +311,10 @@ export default function Page() {
                     <span className="bg-secondary text-secondary-foreground rounded-full px-2 py-0.5 font-mono text-[11px]">
                       {site.id}
                     </span>
+                    {(() => {
+                      const statusBadge = getVerificationStatusBadge(site.verificationStatus);
+                      return <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>;
+                    })()}
                   </div>
                   <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-3 text-sm">
                     <span className="inline-flex items-center gap-1">
@@ -275,6 +353,91 @@ export default function Page() {
                     {deletingSiteId === site.id ? 'Removing...' : 'Remove'}
                   </Button>
                 </div>
+              </div>
+
+              <div className="bg-muted/30 mt-4 rounded-lg border p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Domain verification</p>
+                    {site.verificationStatus === 'verified' ? (
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        Verified via{' '}
+                        {site.verificationMethod ? getVerificationMethodLabel(site.verificationMethod) : 'method'}{' '}
+                        {site.verifiedLabel ? `on ${site.verifiedLabel}` : ''}.
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        Choose a method, place the token, then click Verify domain.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {site.verificationStatus !== 'verified' && (
+                  <>
+                    <div className="mt-3 max-w-sm">
+                      <Select
+                        value={resolveVerificationMethod(site)}
+                        onValueChange={value =>
+                          setVerificationMethodBySiteId(prev => ({
+                            ...prev,
+                            [site.id]: value as SiteVerificationMethod,
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select verification method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dns_txt">DNS TXT record</SelectItem>
+                          <SelectItem value="meta_tag">Meta tag</SelectItem>
+                          <SelectItem value="file">File in .well-known</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {(() => {
+                      const selectedMethod = resolveVerificationMethod(site);
+                      const instructions = getVerificationInstructions(
+                        site.domain,
+                        site.verificationToken,
+                        selectedMethod
+                      );
+
+                      return (
+                        <div className="mt-3 grid gap-3">
+                          <div className="rounded-md border bg-white p-3">
+                            <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+                              {instructions.locationLabel}
+                            </p>
+                            <code className="mt-1 block text-xs break-all">{instructions.locationValue}</code>
+                          </div>
+                          <div className="rounded-md border bg-white p-3">
+                            <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+                              {instructions.valueLabel}
+                            </p>
+                            <code className="mt-1 block text-xs break-all">{instructions.value}</code>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <Button
+                      className="mt-3"
+                      onClick={() => void verifySite(site.id, resolveVerificationMethod(site))}
+                      disabled={verifyingSiteId === site.id}
+                    >
+                      {verifyingSiteId === site.id ? (
+                        <>
+                          <Spinner className="mr-2 h-4 w-4" />
+                          Verifying...
+                        </>
+                      ) : (
+                        'Verify domain'
+                      )}
+                    </Button>
+                  </>
+                )}
               </div>
 
               <details className="group mt-4">

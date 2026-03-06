@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
-import { api } from '@/lib/api';
-import { Site } from '@/types/site';
-import ApiResponse from '@/lib/ApiResponse';
+import { api, ApiResponse } from '@/lib/api';
+import { Site, SiteVerificationMethod } from '@/types/site';
 
 export const useSites = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sites, setSites] = useState<Site[]>([]);
   const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null);
+  const [verifyingSiteId, setVerifyingSiteId] = useState<string | null>(null);
 
   const fetchSites = useCallback(async () => {
     try {
@@ -34,6 +34,11 @@ export const useSites = () => {
 
   const appendNewSite = (site: Site) => {
     setSites(prev => (prev.some(existingSite => existingSite.id === site.id) ? prev : [site, ...prev]));
+  };
+
+  const replaceSite = (updated: Site | null) => {
+    if (!updated) return;
+    setSites(prev => prev.map(site => (site.id === updated.id ? updated : site)));
   };
 
   const handleDelete = async (id: string) => {
@@ -69,5 +74,36 @@ export const useSites = () => {
     }
   };
 
-  return { refreshSites: fetchSites, sites, loading, error, appendNewSite, handleDelete, deletingSiteId };
+  const verifySite = async (id: string, method: SiteVerificationMethod) => {
+    setVerifyingSiteId(id);
+    try {
+      const { data } = await api.post<ApiResponse<Site>>(`/api/sites/${encodeURIComponent(id)}/verify`, { method });
+      replaceSite(data.data ?? null);
+      toast.success(data.message ?? 'Domain verified successfully.');
+    } catch (err) {
+      console.error('Error verifying site:', err);
+
+      if (err instanceof AxiosError) {
+        const payload = err.response?.data as { message?: string; data?: Site } | undefined;
+        replaceSite(payload?.data ?? null);
+        toast.error(payload?.message ?? 'Verification failed. Please try again.');
+      } else {
+        toast.error('Verification failed. Please try again.');
+      }
+    } finally {
+      setVerifyingSiteId(current => (current === id ? null : current));
+    }
+  };
+
+  return {
+    refreshSites: fetchSites,
+    sites,
+    loading,
+    error,
+    appendNewSite,
+    handleDelete,
+    deletingSiteId,
+    verifySite,
+    verifyingSiteId,
+  };
 };
