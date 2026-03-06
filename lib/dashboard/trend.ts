@@ -1,4 +1,4 @@
-import { and, count, eq, gte, sql, desc } from 'drizzle-orm';
+import { and, count, eq, gte, isNull, or, sql, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { visitor } from '@/lib/db/schema';
 import type { TrendData, TrendBucket } from '@/types/dashboard';
@@ -13,6 +13,7 @@ import type { TrendData, TrendBucket } from '@/types/dashboard';
 export async function getVisitsTrend(siteId: string): Promise<TrendData> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const nonBotCondition = or(eq(visitor.isBot, false), isNull(visitor.isBot));
 
   const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(today.getDate() - 6);
@@ -25,7 +26,7 @@ export async function getVisitsTrend(siteId: string): Promise<TrendData> {
         count: count().as('count'),
       })
       .from(visitor)
-      .where(and(eq(visitor.siteId, siteId), gte(visitor.createdAt, sevenDaysAgo)))
+      .where(and(eq(visitor.siteId, siteId), gte(visitor.createdAt, sevenDaysAgo), nonBotCondition))
       .groupBy(sql`DATE(${visitor.createdAt})`)
       .orderBy(sql`date`),
 
@@ -36,7 +37,7 @@ export async function getVisitsTrend(siteId: string): Promise<TrendData> {
         count: count().as('count'),
       })
       .from(visitor)
-      .where(and(eq(visitor.siteId, siteId), gte(visitor.createdAt, sevenDaysAgo)))
+      .where(and(eq(visitor.siteId, siteId), gte(visitor.createdAt, sevenDaysAgo), nonBotCondition))
       .groupBy(sql`hour`)
       .orderBy(desc(sql`count`))
       .limit(1),

@@ -1,4 +1,4 @@
-import { eq, desc } from 'drizzle-orm';
+import { and, desc, eq, isNull, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { visitor } from '@/lib/db/schema';
 import type { ActivityItem } from '@/types/dashboard';
@@ -9,6 +9,8 @@ const DEFAULT_LIMIT = 8;
  * Fetches the most recent visits for a given site.
  */
 export async function getRecentActivity(siteId: string, limit = DEFAULT_LIMIT): Promise<ActivityItem[]> {
+  const nonBotCondition = or(eq(visitor.isBot, false), isNull(visitor.isBot));
+
   const rows = await db
     .select({
       id: visitor.id,
@@ -19,7 +21,7 @@ export async function getRecentActivity(siteId: string, limit = DEFAULT_LIMIT): 
       createdAt: visitor.createdAt,
     })
     .from(visitor)
-    .where(eq(visitor.siteId, siteId))
+    .where(and(eq(visitor.siteId, siteId), nonBotCondition))
     .orderBy(desc(visitor.createdAt))
     .limit(limit);
 

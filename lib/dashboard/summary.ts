@@ -1,4 +1,4 @@
-import { and, count, countDistinct, eq, isNotNull, sql, desc } from 'drizzle-orm';
+import { and, count, countDistinct, eq, isNotNull, isNull, or, sql, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { visitor } from '@/lib/db/schema';
 import type { SummaryStats } from '@/types/dashboard';
@@ -8,6 +8,7 @@ import type { SummaryStats } from '@/types/dashboard';
  */
 export async function getSummaryStats(siteId: string): Promise<SummaryStats> {
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const nonBotCondition = or(eq(visitor.isBot, false), isNull(visitor.isBot));
 
   const [totals, uniqueIps, uniquePaths, topPage, topReferrer, topBrowser] = await Promise.all([
     // 1. Total count + latest + last24h
@@ -20,25 +21,25 @@ export async function getSummaryStats(siteId: string): Promise<SummaryStats> {
         ),
       })
       .from(visitor)
-      .where(eq(visitor.siteId, siteId)),
+      .where(and(eq(visitor.siteId, siteId), nonBotCondition)),
 
     // 2. Unique visitors
     db
       .select({ uniqueVisitors: countDistinct(visitor.ip).as('unique_visitors') })
       .from(visitor)
-      .where(eq(visitor.siteId, siteId)),
+      .where(and(eq(visitor.siteId, siteId), nonBotCondition)),
 
     // 3. Active pages
     db
       .select({ activePages: countDistinct(visitor.path).as('active_pages') })
       .from(visitor)
-      .where(eq(visitor.siteId, siteId)),
+      .where(and(eq(visitor.siteId, siteId), nonBotCondition)),
 
     // 4. Top page
     db
       .select({ path: visitor.path, visits: count().as('visits') })
       .from(visitor)
-      .where(eq(visitor.siteId, siteId))
+      .where(and(eq(visitor.siteId, siteId), nonBotCondition))
       .groupBy(visitor.path)
       .orderBy(desc(sql`visits`))
       .limit(1),
@@ -47,7 +48,7 @@ export async function getSummaryStats(siteId: string): Promise<SummaryStats> {
     db
       .select({ referrer: visitor.referrer, visits: count().as('visits') })
       .from(visitor)
-      .where(and(eq(visitor.siteId, siteId), isNotNull(visitor.referrer)))
+      .where(and(eq(visitor.siteId, siteId), isNotNull(visitor.referrer), nonBotCondition))
       .groupBy(visitor.referrer)
       .orderBy(desc(sql`visits`))
       .limit(1),
@@ -56,7 +57,7 @@ export async function getSummaryStats(siteId: string): Promise<SummaryStats> {
     db
       .select({ browser: visitor.browser, visits: count().as('visits') })
       .from(visitor)
-      .where(eq(visitor.siteId, siteId))
+      .where(and(eq(visitor.siteId, siteId), nonBotCondition))
       .groupBy(visitor.browser)
       .orderBy(desc(sql`visits`))
       .limit(1),

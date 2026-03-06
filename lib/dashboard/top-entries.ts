@@ -1,4 +1,4 @@
-import { count, eq, sql, desc } from 'drizzle-orm';
+import { and, count, eq, isNull, or, sql, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { visitor } from '@/lib/db/schema';
 import type { TopEntry } from '@/types/dashboard';
@@ -12,13 +12,15 @@ async function getTopEntries(
   total: number,
   limit = DEFAULT_LIMIT
 ): Promise<TopEntry[]> {
+  const nonBotCondition = or(eq(visitor.isBot, false), isNull(visitor.isBot));
+
   const rows = await db
     .select({
       label: column,
       count: count().as('count'),
     })
     .from(visitor)
-    .where(eq(visitor.siteId, siteId))
+    .where(and(eq(visitor.siteId, siteId), nonBotCondition))
     .groupBy(column)
     .orderBy(desc(sql`count`))
     .limit(limit);
