@@ -7,6 +7,7 @@ import { HTTP_STATUS } from '@/lib/constant';
 import { trackSchema } from '@/types/schema';
 import { serverEnv } from '@/env/server';
 import crypto from 'crypto';
+import { cookies } from 'next/headers';
 
 type TrackPayload = {
   siteId?: unknown;
@@ -27,6 +28,11 @@ const CORS_HEADERS = {
   'Access-Control-Max-Age': '86400',
   Vary: 'Origin',
 } as const;
+
+const SESSION_COOKIE_NAME = 'whovisited_track_session_id';
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+const SESSION_COOKIE_MAX_AGE_SECONDS = SESSION_TIMEOUT_MS / 1000;
+const SESSION_CLEANUP_INTERVAL_MS = 60 * 1000;
 
 function toStringValue(value: unknown, fallback: string, maxLength: number) {
   if (typeof value !== 'string') return fallback;
@@ -245,6 +251,27 @@ function getRateInfo(key: string, now: number) {
   };
 }
 
+type SessionState = {
+  landingPage: string;
+  lastPage: string;
+  lastSeenAt: number;
+};
+
+// siteId:sessionId -> session state
+const sessionMap = new Map<string, SessionState>();
+let lastSessionCleanupAt = 0;
+
+function cleanupSessionMap(now: number) {
+  if (now - lastSessionCleanupAt < SESSION_CLEANUP_INTERVAL_MS) return;
+  lastSessionCleanupAt = now;
+
+  for (const [key, session] of sessionMap.entries()) {
+    if (now - session.lastSeenAt > SESSION_TIMEOUT_MS) {
+      sessionMap.delete(key);
+    }
+  }
+}
+
 // POST - /api/track
 export async function POST(request: NextRequest) {
   try {
@@ -314,6 +341,50 @@ export async function POST(request: NextRequest) {
     const botReason = botReasonFromRequest ?? rateBotReason;
     const isBot = botReason !== null;
 
+    // user tracking session management
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
+
+    let sessionId = sessionCookie?.value ?? crypto.randomUUID();
+    let sessionKey = `${existingSite.id}:${sessionId}`;
+
+    const nowTime = Date.now();
+    cleanupSessionMap(nowTime);
+    const existingSession = sessionMap.get(sessionKey);
+
+    let landingPage = path;
+    let exitPage = path;
+
+    if (existingSession && nowTime - existingSession.lastSeenAt < SESSION_TIMEOUT_MS) {
+      landingPage = existingSession.landingPage;
+      exitPage = path;
+    } else {
+      sessionId = crypto.randomUUID();
+      sessionKey = `${existingSite.id}:${sessionId}`;
+      landingPage = path;
+      exitPage = path;
+    }
+
+    sessionMap.set(sessionKey, {
+      landingPage,
+      lastPage: path,
+      lastSeenAt: nowTime,
+    });
+
+    const shouldSetCookie = !sessionCookie || sessionId !== sessionCookie.value;
+    if (shouldSetCookie) {
+      const isProduction = serverEnv.NODE_ENV === 'production';
+      cookieStore.set({
+        name: SESSION_COOKIE_NAME,
+        value: sessionId,
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: SESSION_COOKIE_MAX_AGE_SECONDS,
+      });
+    }
+
+    // entry in db of visitor
     await entryVisitor({
       siteId: payload.siteId,
       ip: hashedIp,
@@ -322,6 +393,8 @@ export async function POST(request: NextRequest) {
       device,
       referrer,
       path,
+      landingPage,
+      exitPage,
       isBot,
       botReason,
       country: geo.country,

@@ -81,6 +81,8 @@ export const visitor = pgTable(
     country: varchar('country', { length: 2 }),
     city: varchar('city', { length: 120 }),
     path: text('path').notNull(),
+    landingPage: text('landing_page').notNull(),
+    exitPage: text('exit_page'),
     isBot: boolean('is_bot').default(false),
     botReason: text('bot_reason'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
