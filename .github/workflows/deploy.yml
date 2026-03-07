@@ -2,7 +2,7 @@ name: Deploy to Production
 
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
 
 concurrency:
   group: deploy-production
@@ -30,6 +30,29 @@ jobs:
             echo "Pulling latest code..."
             git fetch origin
             git reset --hard origin/main
+
+            echo "Ensuring database container is up..."
+            docker compose up -d database
+
+            set -a
+            . ./.env
+            set +a
+
+            echo "Waiting for database to accept connections..."
+            until docker compose exec -T database pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; do
+              sleep 2
+            done
+            echo "Database is ready!"
+
+            echo "Applying database migrations..."
+            docker run --rm \
+              --network=connection \
+              -e NODE_ENV=production \
+              -e DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DATABASE_HOST}/${POSTGRES_DB}" \
+              -v "$PWD:/app" \
+              -w /app \
+              node:22-bookworm \
+              bash -lc 'corepack enable && corepack prepare pnpm@10.30.1 --activate && pnpm install --frozen-lockfile && pnpm run db:migrate'
 
             echo "Building and restarting containers..."
             docker compose up -d --build --remove-orphans --pull always
