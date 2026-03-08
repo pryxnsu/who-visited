@@ -156,7 +156,7 @@ function getIpAddress(request: NextRequest) {
 }
 
 function hashIpAddress(siteId: string, ip: string) {
-  const hmac = crypto.createHmac('sha256', serverEnv.NEXTAUTH_SECRET);
+  const hmac = crypto.createHmac('sha256', serverEnv.HASH_SECRET);
   hmac.update(`${siteId}:${ip}`);
   return hmac.digest('hex');
 }

@@ -9,6 +9,7 @@ export const serverEnv = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     NEXTAUTH_SECRET: z.string().min(1),
     NEXTAUTH_URL: z.url(),
+    HASH_SECRET: z.string().min(1),
   },
   experimental__runtimeEnv: process.env,
 });
