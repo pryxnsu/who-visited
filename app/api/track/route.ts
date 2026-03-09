@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { entryVisitor, getSiteBySiteId } from '@/lib/db/queries';
-import { normalizeDomain } from '@/lib/domain';
+import { isEquivalentSiteHost, normalizeDomain } from '@/lib/domain';
 import { HTTP_STATUS } from '@/lib/constant';
 import { trackSchema } from '@/types/schema';
 import { serverEnv } from '@/env/server';
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
     }
 
     const registeredHost = normalizeDomain(existingSite.domain);
-    if (requestSiteHost !== registeredHost) {
+    if (!isEquivalentSiteHost(requestSiteHost, registeredHost)) {
       return NextResponse.json(
         { ok: false, error: 'Request origin does not match the registered site domain.' },
         { status: HTTP_STATUS.BAD_REQUEST, headers: CORS_HEADERS }

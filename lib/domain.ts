@@ -8,3 +8,17 @@ export function normalizeDomain(input: string) {
 
   return withoutWildcard.replace(/\.$/, '');
 }
+
+function stripWwwSubdomain(host: string) {
+  return host.startsWith('www.') ? host.slice(4) : host;
+}
+
+export function isEquivalentSiteHost(hostA: string, hostB: string) {
+  const normalizedA = normalizeDomain(hostA);
+  const normalizedB = normalizeDomain(hostB);
+
+  if (!normalizedA || !normalizedB) return false;
+  if (normalizedA === normalizedB) return true;
+
+  return stripWwwSubdomain(normalizedA) === stripWwwSubdomain(normalizedB);
+}
