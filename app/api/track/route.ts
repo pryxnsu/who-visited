@@ -162,8 +162,12 @@ function hashIpAddress(siteId: string, ip: string) {
 }
 
 function getGeoLocation(request: NextRequest) {
-  const countryRaw = request.headers.get('x-vercel-ip-country') ?? request.headers.get('cf-ipcountry');
-  const cityRaw = request.headers.get('x-vercel-ip-city');
+  const countryRaw =
+    request.headers.get('x-geoip-country') ??
+    request.headers.get('x-vercel-ip-country') ??
+    request.headers.get('cf-ipcountry');
+
+  const cityRaw = request.headers.get('x-geoip-city') ?? request.headers.get('x-vercel-ip-city');
 
   const country = typeof countryRaw === 'string' ? countryRaw.trim().toUpperCase() : '';
   const city = typeof cityRaw === 'string' ? cityRaw.trim() : '';
