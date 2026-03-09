@@ -193,7 +193,7 @@ async function parsePayload(request: NextRequest): Promise<TrackPayload> {
     if (!text.trim()) return {};
     return JSON.parse(text);
   } catch (err) {
-    console.warn('Failed to parse tracking payload:', err);
+    console.error('[Track] Failed to parse request body as JSON:', err instanceof Error ? err.message : err);
     return {};
   }
 }
@@ -279,6 +279,7 @@ export async function POST(request: NextRequest) {
 
     const result = trackSchema.safeParse(raw);
     if (!result.success) {
+      console.warn('[Track] Invalid tracking payload. validation failed:', result.error.issues);
       return new NextResponse(null, { status: HTTP_STATUS.BAD_REQUEST, headers: CORS_HEADERS });
     }
 
@@ -287,6 +288,7 @@ export async function POST(request: NextRequest) {
 
     const existingSite = await getSiteBySiteId(payload.siteId);
     if (!existingSite) {
+      console.warn(`[Track] Site not found for siteId=${payload.siteId}`);
       return NextResponse.json(
         { ok: false, error: 'Site not found. Please register your site first.' },
         { status: HTTP_STATUS.NOT_FOUND, headers: CORS_HEADERS }
@@ -294,6 +296,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingSite.verificationStatus !== 'verified') {
+      console.warn(`[Track] Site not verified. siteId=${payload.siteId}, status=${existingSite.verificationStatus}`);
       return NextResponse.json(
         { ok: false, error: 'Site domain is not verified yet.' },
         { status: HTTP_STATUS.FORBIDDEN, headers: CORS_HEADERS }
@@ -302,6 +305,7 @@ export async function POST(request: NextRequest) {
 
     const requestSiteHost = getRequestSiteHost(request);
     if (!requestSiteHost) {
+      console.warn(`[Track] Missing or invalid request origin. siteId=${payload.siteId}`);
       return NextResponse.json(
         { ok: false, error: 'Missing or invalid request origin.' },
         { status: HTTP_STATUS.BAD_REQUEST, headers: CORS_HEADERS }
@@ -310,6 +314,9 @@ export async function POST(request: NextRequest) {
 
     const registeredHost = normalizeDomain(existingSite.domain);
     if (!isEquivalentSiteHost(requestSiteHost, registeredHost)) {
+      console.warn(
+        `[Track] Origin mismatch. requestHost=${requestSiteHost}, registeredHost=${registeredHost}, siteId=${payload.siteId}`
+      );
       return NextResponse.json(
         { ok: false, error: 'Request origin does not match the registered site domain.' },
         { status: HTTP_STATUS.BAD_REQUEST, headers: CORS_HEADERS }
@@ -340,6 +347,10 @@ export async function POST(request: NextRequest) {
     const rateBotReason = isRateBot ? 'rate_limit_exceeded' : null;
     const botReason = botReasonFromRequest ?? rateBotReason;
     const isBot = botReason !== null;
+
+    if (isBot) {
+      console.info(`[Track] Bot detected. siteId=${payload.siteId}, path=${path}, reason=${botReason}`);
+    }
 
     // user tracking session management
     const cookieStore = await cookies();
@@ -403,7 +414,7 @@ export async function POST(request: NextRequest) {
 
     return new NextResponse(null, { status: HTTP_STATUS.NO_CONTENT, headers: CORS_HEADERS });
   } catch (error) {
-    console.error('Tracking error:', error);
+    console.error('[Track] Unexpected error during tracking:', error instanceof Error ? error.message : error);
     return new NextResponse(null, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR, headers: CORS_HEADERS });
   }
 }
