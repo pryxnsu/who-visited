@@ -25,3 +25,5 @@ export type DashboardPollIntervalMs = (typeof DASHBOARD_POLL_INTERVAL_OPTIONS)[n
 export function isValidDashboardPollInterval(value: number): value is DashboardPollIntervalMs {
   return DASHBOARD_POLL_INTERVAL_OPTIONS.includes(value as DashboardPollIntervalMs);
 }
+
+export const CONTACT_EMAIL = 'priyanshuknp444@gmail.com';
