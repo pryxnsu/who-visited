@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { MousePointerClick, Activity, Globe, Users, Monitor, Smartphone, ChevronRight, Github } from 'lucide-react';
+import { CONTACT_EMAIL } from '@/lib/constant';
 
 const quickStats = [
   { label: 'Total visits', value: '52,431', icon: Activity },
@@ -170,17 +171,32 @@ export default function Home() {
           </div>
         </section>
 
-        <footer className="border-border/50 mt-16 border-t pt-6 pb-4 text-center sm:mt-24 sm:pt-8">
+        <footer className="border-border/50 mt-16 flex flex-col items-center gap-6 border-t py-6 sm:mt-24 sm:flex-row sm:justify-between sm:py-8">
+          <div className="text-muted-foreground flex flex-col items-center gap-2 sm:items-start">
+            <p className="text-xs sm:text-sm">&copy; {new Date().getFullYear()} WhoVisited. All rights reserved.</p>
+            <div className="flex items-center gap-4 text-xs sm:text-sm">
+              <Link href="/privacy-policy" className="hover:text-foreground transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/terms-of-service" className="hover:text-foreground transition-colors">
+                Terms of Service
+              </Link>
+              <Link href={`mailto:${CONTACT_EMAIL}`} className="hover:text-foreground transition-colors">
+                Contact
+              </Link>
+            </div>
+          </div>
+
           <p className="text-muted-foreground text-xs sm:text-sm">
             Built by{' '}
-            <a
+            <Link
               href="https://x.com/pryxnsu"
               target="_blank"
               rel="noopener noreferrer"
               className="text-foreground hover:decoration-primary font-semibold transition-colors"
             >
               Priyanshu
-            </a>
+            </Link>
           </p>
         </footer>
       </div>
