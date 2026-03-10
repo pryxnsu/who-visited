@@ -19,9 +19,12 @@ const inconsolata = Inconsolata({
 });
 
 export const metadata: Metadata = {
-  title: 'WhoVisited | Know when someone visits your portfolio',
+  title: {
+    default: 'WhoVisited',
+    template: '%s | WhoVisited',
+  },
   description:
-    'A simple visit tracker for portfolio owners. Embed one snippet and monitor every new portfolio visit live.',
+    'Privacy-first website analytics that helps you understand your traffic without invasive tracking. Simple, lightweight, and privacy-friendly insights.',
 };
 
 export default function RootLayout({
