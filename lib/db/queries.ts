@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, desc } from 'drizzle-orm';
 import { db } from './index';
-import { site, user, visitor } from './schema';
+import { site, user, visitor, feedback } from './schema';
 
 export async function getUserByEmail(email: string) {
   try {
@@ -110,4 +110,37 @@ export async function updateSiteVerification(
 
 export async function entryVisitor(data: Omit<typeof visitor.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>) {
   await db.insert(visitor).values(data);
+}
+
+export async function createFeedback(data: typeof feedback.$inferInsert) {
+  try {
+    const [f] = await db.insert(feedback).values(data).returning();
+    return f ?? null;
+  } catch (error: unknown) {
+    console.error('Database query failed in createFeedback', error);
+    throw new Error('Failed to create feedback');
+  }
+}
+
+export async function getFeedbacks() {
+  try {
+    return await db
+      .select({
+        id: feedback.id,
+        content: feedback.content,
+        createdAt: feedback.createdAt,
+        user: {
+          id: user.id,
+          name: user.name,
+          avatar: user.avatar,
+        },
+      })
+      .from(feedback)
+      .innerJoin(user, eq(feedback.userId, user.id))
+      .limit(30)
+      .orderBy(desc(feedback.createdAt));
+  } catch (error: unknown) {
+    console.error('Database query failed in getFeedbacks', error);
+    throw new Error('Failed to fetch feedbacks');
+  }
 }
