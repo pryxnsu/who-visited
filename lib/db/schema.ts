@@ -1,20 +1,12 @@
-import { InferSelectModel } from 'drizzle-orm';
+import { desc, InferSelectModel } from 'drizzle-orm';
 import { boolean, index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { v7 as uuidv7 } from 'uuid';
 
 export const roleEnum = pgEnum('role', ['user', 'admin']);
 
-export const verificationStatusEnum = pgEnum('verification_status', [
-  'pending',
-  'verified',
-  'failed',
-]);
+export const verificationStatusEnum = pgEnum('verification_status', ['pending', 'verified', 'failed']);
 
-export const verificationMethodEnum = pgEnum('verification_method', [
-  'dns_txt',
-  'meta_tag',
-  'file',
-]);
+export const verificationMethodEnum = pgEnum('verification_method', ['dns_txt', 'meta_tag', 'file']);
 
 export const user = pgTable(
   'user',
@@ -94,10 +86,26 @@ export const visitor = pgTable(
     index('visitor_site_path_idx').on(t.siteId, t.path),
     index('visitor_site_referrer_idx').on(t.siteId, t.referrer),
     index('visitor_site_browser_idx').on(t.siteId, t.browser),
-    index('visitor_site_is_bot_idx').on(t.siteId, t.isBot, t.createdAt)
+    index('visitor_site_is_bot_idx').on(t.siteId, t.isBot, t.createdAt),
   ]
+);
+
+export const feedback = pgTable(
+  'feedback',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  t => [index('feedback_user_id_idx').on(t.userId), index('feedback_created_at_idx').on(desc(t.createdAt))]
 );
 
 export type User = InferSelectModel<typeof user>;
 export type Site = InferSelectModel<typeof site>;
 export type Visitor = InferSelectModel<typeof visitor>;
+export type Feedback = InferSelectModel<typeof feedback>;
