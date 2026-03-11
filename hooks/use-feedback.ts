@@ -19,6 +19,7 @@ export const useFeedback = () => {
   const [error, setError] = useState<string>('');
 
   const fetchFeedbacks = useCallback(async () => {
+    setIsLoading(true);
     try {
       const response = await api.get<ApiResponse<Feedback[]>>('/api/feedbacks');
       if (response.data.data) {

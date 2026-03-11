@@ -2,7 +2,6 @@
 
 import FeedbackForm from './FeedbackForm';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Spinner } from '@/components/ui/spinner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Feedback, useFeedback } from '@/hooks/use-feedback';
 import Loader from '@/components/Loader';
@@ -11,13 +10,6 @@ import ErrorUI from '@/components/Error';
 export default function Page() {
   const { feedbacks, addFeedback, isLoading, refresh, error } = useFeedback();
 
-  if (isLoading) {
-    return <Loader />;
-  }
-
-  if (error) {
-    return <ErrorUI error={error} onRetry={refresh} />;
-  }
   return (
     <div className="flex w-full flex-col gap-8">
       <section className="border-b pb-6">
@@ -35,26 +27,32 @@ export default function Page() {
         <div>
           <FeedbackForm onSuccess={addFeedback} />
         </div>
-        <div className="mt-8 flex flex-col gap-6">
-          <h2 className="text-foreground/90 text-xl font-semibold tracking-tight">Feedback</h2>
-          {isLoading ? (
-            <div className="flex justify-center p-8">
-              <Spinner className="h-6 w-6" />
-            </div>
-          ) : feedbacks.length === 0 ? (
-            <Card className="border-dashed bg-transparent shadow-none">
-              <CardContent className="text-muted-foreground flex flex-col items-center justify-center p-8 text-center">
-                <p>No feedback has been submitted yet. Be the first!</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {feedbacks.map(f => {
-                return <FeedbackCard key={f.id} feedback={f} />;
-              })}
-            </div>
-          )}
-        </div>
+        {error ? (
+          <div className="mt-8">
+            <ErrorUI error={error} onRetry={refresh} />
+          </div>
+        ) : (
+          <div className="mt-8 flex flex-col gap-6">
+            <h2 className="text-foreground/90 text-xl font-semibold tracking-tight">Feedback</h2>
+            {isLoading ? (
+              <div className="flex justify-center p-8">
+                <Loader />
+              </div>
+            ) : feedbacks.length === 0 ? (
+              <Card className="border-dashed bg-transparent shadow-none">
+                <CardContent className="text-muted-foreground flex flex-col items-center justify-center p-8 text-center">
+                  <p>No feedback has been submitted yet. Be the first!</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {feedbacks.map(f => {
+                  return <FeedbackCard key={f.id} feedback={f} />;
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
