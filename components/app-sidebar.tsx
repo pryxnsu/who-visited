@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { signOut, useSession } from 'next-auth/react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Wrench, Globe } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Wrench, Globe, MessageSquarePlus } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -102,6 +102,30 @@ export function AppSidebar() {
 
       <SidebarFooter className="relative z-10 flex w-full shrink-0 flex-col gap-2 px-3 pb-3">
         <SidebarMenu className="w-full">
+          <SidebarMenuItem className="mb-3">
+            <Button
+              asChild
+              variant="ghost"
+              className={cn(
+                'h-10 w-full justify-start rounded-lg px-4 text-sm transition-all duration-300',
+                pathname === '/feedbacks' || pathname.startsWith('/feedbacks/')
+                  ? 'bg-background border-border/40 text-foreground border font-medium shadow-none'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-black/5'
+              )}
+            >
+              <Link href="/feedbacks">
+                <MessageSquarePlus
+                  className={cn(
+                    'mr-2 h-5 w-5',
+                    pathname === '/feedbacks' || pathname.startsWith('/feedbacks/')
+                      ? 'text-foreground'
+                      : 'text-muted-foreground/80'
+                  )}
+                />
+                Feedback
+              </Link>
+            </Button>
+          </SidebarMenuItem>
           <SidebarMenuItem className="w-full">
             <AlertDialog>
               <AlertDialogTrigger asChild>
