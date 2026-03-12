@@ -45,6 +45,19 @@ export function getRelativeTime(isoTimestamp: string) {
   return `${diffDays}d ago`;
 }
 
+export function normalizeTime(time: string) {
+  const date = new Date(time);
+
+  return date.toLocaleString('en-US', {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  });
+}
+
 export function formatShare(value: number) {
   return `${Math.round(value * 100)}%`;
 }
