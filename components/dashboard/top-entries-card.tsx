@@ -13,7 +13,9 @@ export function TopEntriesCard({ title, entries, emptyMessage, barColor = 'bg-pr
   return (
     <Card className="gap-0 border-dashed py-6 shadow-none">
       <CardHeader className="pt-0 pb-6">
-        <CardTitle className="text-xl font-semibold tracking-tight">{title}</CardTitle>
+        <CardTitle className="text-muted-foreground mt-1 text-base font-semibold tracking-wider uppercase">
+          {title}
+        </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 pb-0">
         {entries.length === 0 ? (

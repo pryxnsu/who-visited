@@ -2,7 +2,7 @@
 
 import { Bar, BarChart, XAxis, YAxis } from 'recharts';
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import type { TrendBucket } from '@/types/dashboard';
 
 type VisitsTrendProps = {
@@ -61,12 +61,16 @@ const CustomHatchedBar = (props: React.SVGProps<SVGRectElement> & { dataKey?: st
 
 export function VisitsTrend({ loading, dayTrend, peakHour }: VisitsTrendProps) {
   return (
-    <Card className="flex flex-col gap-0 border-dashed py-6 shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between pt-0 pb-6">
-        <CardTitle className="text-xl font-semibold tracking-tight">Visits trend (7 days)</CardTitle>
-        <div className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-semibold">Peak: {peakHour}</div>
+    <Card className="flex flex-col gap-0 border-dashed rounded-4xl py-6 shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between pt-0 pb-6 px-8">
+        <h2 className="text-muted-foreground mt-1 text-base font-semibold tracking-wider uppercase">
+          Visits trend (7 days)
+        </h2>
+        <div className="bg-muted text-foreground flex items-center justify-center rounded-sm px-2 py-2 font-mono text-[13px] font-medium leading-none">
+          Peak: {peakHour}
+        </div>
       </CardHeader>
-      <CardContent className="flex flex-1 flex-col pt-0 pb-0">
+      <CardContent className="flex flex-1 flex-col pt-0 pb-0 px-8">
         {loading ? (
           <p className="text-muted-foreground m-auto text-sm">Loading trend...</p>
         ) : (
