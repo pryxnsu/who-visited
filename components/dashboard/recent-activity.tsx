@@ -11,8 +11,10 @@ type RecentActivityProps = {
 export function RecentActivity({ loading, activities }: RecentActivityProps) {
   return (
     <Card className="flex flex-col gap-0 border-dashed py-6 shadow-none">
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between pt-0 px-7">
-        <CardTitle className="text-muted-foreground mt-1 text-base font-semibold tracking-wider uppercase">Recent activity</CardTitle>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between px-7 pt-0">
+        <CardTitle className="text-muted-foreground mt-1 text-base font-semibold tracking-wider uppercase">
+          Recent activity
+        </CardTitle>
       </CardHeader>
 
       <CardContent className="pt-0 pb-0">
@@ -48,17 +50,14 @@ export function RecentActivity({ loading, activities }: RecentActivityProps) {
                   </TableCell>
 
                   <TableCell className="py-4 align-top">
-                    <div className="flex min-w-0 gap-0.5">
-                      <div className="flex items-center gap-2 pr-1">
-                        <span className="text-muted-foreground truncate leading-none font-medium">
-                          {activity.pagePath}
-                        </span>
-                        <span className="text-foreground"> | </span>
-                      </div>
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="text-foreground truncate font-mono text-[13px] font-medium">
+                        {activity.pagePath}
+                      </span>
                       {activity.referrer && (
-                        <div className="text-muted-foreground mt-1 mb-0.5 truncate text-[13px] leading-none">
+                        <span className="bg-muted text-muted-foreground shrink-0 truncate rounded-sm px-2 pt-1 pb-0.5 font-mono text-[11px]">
                           {activity.referrer}
-                        </div>
+                        </span>
                       )}
                     </div>
                   </TableCell>
