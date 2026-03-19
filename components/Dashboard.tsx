@@ -108,9 +108,7 @@ export default function Dashboard() {
               <span aria-hidden="true" className="bg-primary h-2 w-2 rounded-full motion-safe:animate-pulse" />
               Live analytics dashboard
             </p>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-              {currentSite ? currentSite.name : 'Portfolio Metrics'}
-            </h1>
+            <h1 className="mt-4 text-3xl font-semibold tracking-wide uppercase"> {currentSite?.name || 'undefined'}</h1>
             <p className="text-muted-foreground mt-2 max-w-2xl text-sm sm:text-base">
               Monitor traffic, identify top referrers, and watch recent activity in real time.
             </p>
